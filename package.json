@@ -1,0 +1,30 @@
+{
+  "name": "galaxy-style-ticket-bot",
+  "version": "1.0.0",
+  "description": "Powerful and easy Discord ticket bot for support teams",
+  "main": "src/index.js",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "deploy": "node src/deployCommands.js"
+  },
+  "keywords": [
+    "discord",
+    "ticket",
+    "support",
+    "bot"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^14.21.0",
+    "dotenv": "^16.6.1",
+    "fs-extra": "^11.3.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "globalSupportRoleIds": [],
+  "adminRoleIds": [],
+  "logChannelId": "",
+  "transcriptChannelId": "",
+  "allowOneTicketPerType": true,
+  "closeDeleteDelaySeconds": 10,
+  "ticketChannelNameFormat": "ticket-{id}-{user}",
+  "maxMessagesInTranscript": 500
+}

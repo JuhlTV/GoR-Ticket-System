@@ -1,0 +1,26 @@
+[
+  {
+    "id": "support",
+    "label": "Allgemeiner Support",
+    "description": "Fragen, Hilfe und Problemloesung",
+    "emoji": "🛠️",
+    "categoryName": "SUPPORT TICKETS",
+    "supportRoleIds": []
+  },
+  {
+    "id": "billing",
+    "label": "Billing",
+    "description": "Zahlungen, Rechnungen und Erstattungen",
+    "emoji": "💳",
+    "categoryName": "BILLING TICKETS",
+    "supportRoleIds": []
+  },
+  {
+    "id": "report",
+    "label": "User melden",
+    "description": "Meldung zu Regelverstoessen",
+    "emoji": "🚨",
+    "categoryName": "REPORT TICKETS",
+    "supportRoleIds": []
+  }
+]

@@ -24,6 +24,17 @@ const DATA_DIR = process.env.DATA_DIR
   : path.join(process.cwd(), "data");
 const STORE_PATH = path.join(DATA_DIR, "store.json");
 
+const DEFAULT_SETTINGS = {
+  globalSupportRoleIds: [],
+  adminRoleIds: [],
+  logChannelId: "",
+  transcriptChannelId: "",
+  allowOneTicketPerType: true,
+  closeDeleteDelaySeconds: 10,
+  ticketChannelNameFormat: "ticket-{id}-{user}",
+  maxMessagesInTranscript: 500
+};
+
 function sanitizeChannelName(value) {
   return String(value)
     .toLowerCase()
@@ -45,16 +56,70 @@ function safeContent(value) {
 }
 
 async function createTicketRuntime(client) {
-  await fs.ensureFile(SETTINGS_PATH);
-  await fs.ensureFile(TYPES_PATH);
+  await fs.ensureDir(path.dirname(SETTINGS_PATH));
 
-  const defaultSettings = await fs.readJson(SETTINGS_PATH);
-  const ticketTypes = await fs.readJson(TYPES_PATH);
+  const defaultSettings = {
+    ...DEFAULT_SETTINGS,
+    ...(await readJsonWithFallback(SETTINGS_PATH, DEFAULT_SETTINGS))
+  };
+  const ticketTypes = normalizeTicketTypes(await readJsonWithFallback(TYPES_PATH, []));
+
+  if (ticketTypes.length === 0) {
+    throw new Error("ticket-types.json enthaelt keine gueltigen Ticket-Typen.");
+  }
 
   const store = new JsonStore(STORE_PATH);
   await store.init();
 
   return new TicketRuntime(client, defaultSettings, ticketTypes, store);
+}
+
+async function readJsonWithFallback(filePath, fallback) {
+  const exists = await fs.pathExists(filePath);
+  if (!exists) {
+    await fs.writeJson(filePath, fallback, { spaces: 2 });
+    return fallback;
+  }
+
+  try {
+    const parsed = await fs.readJson(filePath);
+    return parsed ?? fallback;
+  } catch (error) {
+    logger.warn("Konfigurationsdatei ungueltig, nutze Fallback", {
+      filePath,
+      error: error.message
+    });
+    return fallback;
+  }
+}
+
+function normalizeTicketTypes(value) {
+  if (!Array.isArray(value)) return [];
+
+  const normalized = [];
+  const usedIds = new Set();
+
+  for (const item of value) {
+    if (!item || typeof item !== "object") continue;
+    if (!item.id || !item.label) continue;
+
+    const id = sanitizeChannelName(String(item.id));
+    if (!id || usedIds.has(id)) continue;
+
+    usedIds.add(id);
+    normalized.push({
+      id,
+      label: String(item.label).slice(0, 100),
+      description: String(item.description || "Support-Anfrage").slice(0, 100),
+      emoji: item.emoji ? String(item.emoji) : "🎫",
+      categoryName: String(item.categoryName || "SUPPORT TICKETS").slice(0, 100),
+      supportRoleIds: Array.isArray(item.supportRoleIds)
+        ? [...new Set(item.supportRoleIds.map((idValue) => String(idValue)))]
+        : []
+    });
+  }
+
+  return normalized;
 }
 
 class TicketRuntime {
@@ -119,6 +184,13 @@ class TicketRuntime {
       }
 
       const channel = interaction.options.getChannel("channel", true);
+      if (!channel.isTextBased()) {
+        return interaction.reply({
+          content: "Bitte einen Textkanal oder Ankuendigungs-Kanal auswaehlen.",
+          ephemeral: true
+        });
+      }
+
       await this.sendTicketPanel(channel);
       return interaction.reply({
         content: `Ticket-Panel wurde in ${channel} gesendet.`,
@@ -283,6 +355,13 @@ class TicketRuntime {
     if (key === "logChannelId" || key === "transcriptChannelId") {
       if (!channel) {
         return interaction.reply({ content: "Bitte channel angeben.", ephemeral: true });
+      }
+
+      if (!channel.isTextBased()) {
+        return interaction.reply({
+          content: "Der Kanal muss textbasiert sein.",
+          ephemeral: true
+        });
       }
 
       await this.store.setSetting(interaction.guildId, key, channel.id);
@@ -498,7 +577,16 @@ class TicketRuntime {
       }
     }
 
-    const channel = await this.createTicketChannel(interaction.guild, interaction.member, type, settings);
+    let channel;
+    try {
+      channel = await this.createTicketChannel(interaction.guild, interaction.member, type, settings);
+    } catch (error) {
+      logger.error("Ticket-Kanal konnte nicht erstellt werden", { error: error.message });
+      return interaction.reply({
+        content: "Ticket konnte nicht erstellt werden. Bitte pruefe Bot-Rechte und versuche es erneut.",
+        ephemeral: true
+      });
+    }
 
     const ticket = await this.store.createTicket(interaction.guildId, {
       guildId: interaction.guildId,
@@ -555,6 +643,9 @@ class TicketRuntime {
 
   async createTicketChannel(guild, member, ticketType, settings) {
     const me = guild.members.me;
+    if (!me) {
+      throw new Error("Bot-Mitglied in Guild nicht gefunden.");
+    }
 
     let category = guild.channels.cache.find(
       (channel) =>
@@ -638,10 +729,21 @@ class TicketRuntime {
     const ticket = this.store.getTicket(guildId, channel.id);
 
     if (!ticket) return;
+    if (ticket.status === "closing") return;
+
+    await this.store.updateTicket(guildId, channel.id, {
+      status: "closing",
+      closedBy: closedByUser.id,
+      closeReason: safeContent(reason)
+    });
 
     const transcript = await this.createTranscript(channel, settings.maxMessagesInTranscript || 500);
     const transcriptFileName = `transcript-ticket-${ticket.ticketId}.md`;
-    const attachment = new AttachmentBuilder(Buffer.from(transcript, "utf8"), {
+    const transcriptBuffer = Buffer.from(transcript, "utf8");
+    const attachmentForLog = new AttachmentBuilder(transcriptBuffer, {
+      name: transcriptFileName
+    });
+    const attachmentForTranscript = new AttachmentBuilder(transcriptBuffer, {
       name: transcriptFileName
     });
 
@@ -657,7 +759,7 @@ class TicketRuntime {
         { name: "Geschlossen von", value: `<@${closedByUser.id}>`, inline: true },
         { name: "Grund", value: safeContent(reason).slice(0, 1024) || "Kein Grund" }
       ],
-      files: [attachment]
+      files: [attachmentForLog]
     });
 
     if (settings.transcriptChannelId) {
@@ -665,14 +767,14 @@ class TicketRuntime {
       if (transcriptChannel && transcriptChannel.isTextBased()) {
         await transcriptChannel.send({
           content: `Transcript fuer Ticket #${ticket.ticketId}`,
-          files: [attachment]
+          files: [attachmentForTranscript]
         });
       }
     }
 
     await this.store.closeTicket(guildId, channel.id);
 
-    const delay = Number(settings.closeDeleteDelaySeconds || 0);
+    const delay = Math.max(0, Number(settings.closeDeleteDelaySeconds || 0));
     await channel.send(`Ticket wird in ${delay} Sekunden geschlossen. Grund: ${safeContent(reason) || "Kein Grund"}`);
 
     setTimeout(async () => {

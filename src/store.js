@@ -12,7 +12,12 @@ class JsonStore {
     await fs.ensureDir(path.dirname(this.filePath));
 
     if (await fs.pathExists(this.filePath)) {
-      this.state = await fs.readJson(this.filePath);
+      try {
+        this.state = await fs.readJson(this.filePath);
+      } catch {
+        this.state = { guilds: {} };
+        await this.save();
+      }
     } else {
       await this.save();
     }

@@ -1,4 +1,4 @@
-const { REST, Routes, SlashCommandBuilder, PermissionFlagsBits } = require("discord.js");
+const { REST, Routes, SlashCommandBuilder, PermissionFlagsBits, ChannelType } = require("discord.js");
 
 const commandData = [
   new SlashCommandBuilder()
@@ -9,7 +9,11 @@ const commandData = [
         .setName("panel")
         .setDescription("Sendet das Ticket-Panel in einen Kanal")
         .addChannelOption((opt) =>
-          opt.setName("channel").setDescription("Zielkanal").setRequired(true)
+          opt
+            .setName("channel")
+            .setDescription("Zielkanal")
+            .setRequired(true)
+            .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
         )
     )
     .addSubcommand((sub) =>
@@ -86,7 +90,11 @@ const commandData = [
             )
         )
         .addChannelOption((opt) =>
-          opt.setName("channel").setDescription("Kanalwert fuer Kanal-Einstellungen").setRequired(false)
+          opt
+            .setName("channel")
+            .setDescription("Kanalwert fuer Kanal-Einstellungen")
+            .setRequired(false)
+            .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
         )
         .addRoleOption((opt) =>
           opt.setName("role").setDescription("Rollenwert fuer Rollen-Einstellungen").setRequired(false)

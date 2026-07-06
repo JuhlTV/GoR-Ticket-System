@@ -1,8 +1,8 @@
 {
   "globalSupportRoleIds": [],
-  "adminRoleIds": [],
+  "adminRoleIds": ["1514888343995945101"],
   "logChannelId": "",
-  "transcriptChannelId": "",
+  "transcriptChannelId": "1514884251823378472",
   "allowOneTicketPerType": true,
   "closeDeleteDelaySeconds": 10,
   "inactivityReminderHours": 24,
@@ -11,13 +11,14 @@
   "inactivityMonitorIntervalMinutes": 5,
   "ticketChannelNameFormat": "ticket-{id}-{user}",
   "maxMessagesInTranscript": 500,
-  "panelStyle": "dropdown",
-  "panelTitle": "Support Ticket erstellen",
+  "panelStyle": "button",
+  "panelTitle": "Support-Hub",
   "panelDescription": "Waehle den passenden Ticket-Typ aus. Danach oeffnet sich ein Formular fuer dein Anliegen.",
   "panelColor": 2066252,
   "panelFooter": "Bitte ein Ticket pro Thema erstellen.",
   "panelImageUrl": "",
   "panelThumbnailUrl": "",
-  "useThreads": false,
-  "threadChannelId": ""
+  "useThreads": true,
+  "threadChannelId": "",
+  "serverTeamRoleId": ""
 }

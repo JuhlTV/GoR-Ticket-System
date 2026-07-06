@@ -82,7 +82,8 @@ const DEFAULT_SETTINGS = {
   panelImageUrl: "",
   panelThumbnailUrl: "",
   useThreads: false,
-  threadChannelId: ""
+  threadChannelId: "",
+  serverTeamRoleId: ""
 };
 
 function sanitizeChannelName(value) {
@@ -907,6 +908,11 @@ class TicketRuntime {
             name: "Thread-Kanal",
             value: settings.threadChannelId ? `<#${settings.threadChannelId}>` : "nicht gesetzt",
             inline: true
+          },
+          {
+            name: "Server-Team-Rolle",
+            value: settings.serverTeamRoleId ? `<@&${settings.serverTeamRoleId}>` : "nicht gesetzt",
+            inline: true
           }
         )
         .setTimestamp();
@@ -996,6 +1002,12 @@ class TicketRuntime {
       if (!channel) return interaction.reply({ content: "Bitte channel angeben.", ephemeral: true });
       await this.store.setSetting(interaction.guildId, key, channel.id);
       return interaction.reply({ content: `Thread-Kanal auf ${channel} gesetzt.`, ephemeral: true });
+    }
+
+    if (key === "serverTeamRoleId") {
+      if (!role) return interaction.reply({ content: "Bitte role angeben.", ephemeral: true });
+      await this.store.setSetting(interaction.guildId, key, role.id);
+      return interaction.reply({ content: `Server-Team-Rolle auf ${role} gesetzt. Diese Rolle wird automatisch zu neuen Threads hinzugefuegt.`, ephemeral: true });
     }
 
     if (key === "allowOneTicketPerType") {
@@ -1446,6 +1458,22 @@ class TicketRuntime {
           invitable: false
         });
         await thread.members.add(member.id).catch(() => null);
+
+        // Add server team role to thread
+        if (settings.serverTeamRoleId) {
+          try {
+            const teamRole = guild.roles.cache.get(settings.serverTeamRoleId);
+            if (teamRole) {
+              const teamMembers = guild.members.cache.filter(m => m.roles.cache.has(settings.serverTeamRoleId));
+              for (const teamMember of teamMembers.values()) {
+                await thread.members.add(teamMember.id).catch(() => null);
+              }
+            }
+          } catch (err) {
+            logger.error("Error adding team to thread:", err);
+          }
+        }
+
         return thread;
       }
     }

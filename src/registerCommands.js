@@ -141,7 +141,8 @@ const commandData = [
               { name: "Panel-Bild-URL", value: "panelImageUrl" },
               { name: "Panel-Thumbnail-URL", value: "panelThumbnailUrl" },
               { name: "Thread-Modus (true=Threads statt Kanaele)", value: "useThreads" },
-              { name: "Thread-Kanal (Parent-Kanal fuer Threads)", value: "threadChannelId" }
+              { name: "Thread-Kanal (Parent-Kanal fuer Threads)", value: "threadChannelId" },
+              { name: "Server-Team-Rolle (auto hinzufuegen zu Threads)", value: "serverTeamRoleId" }
             )
         )
         .addChannelOption((opt) =>

@@ -21,9 +21,12 @@ Ein leistungsstarkes, modernes Ticket-System fuer Support-Server mit einfacher K
 3. Umgebungsdatei erstellen:
    - .env.example nach .env kopieren
    - Werte eintragen
-4. Befehle deployen:
+4. Bot mit dem korrekten OAuth-Scope einladen oder neu einladen:
+   npm run invite
+   Wichtig: Der Link muss sowohl `bot` als auch `applications.commands` enthalten.
+5. Befehle deployen:
    npm run deploy
-5. Bot starten:
+6. Bot starten:
    npm start
 
 ## Setup im Discord-Server
@@ -35,12 +38,15 @@ Ein leistungsstarkes, modernes Ticket-System fuer Support-Server mit einfacher K
    - Read Message History
    - Attach Files
    - Use Slash Commands
+   - OAuth-Scopes: bot, applications.commands
 2. Optional: Rollen/Kanaele in config/settings.json vorab eintragen
 3. In Discord ausfuehren:
    - /ticket panel channel:#support
 4. Support-Team arbeitet anschliessend mit:
    - /ticket close
    - /ticket claim
+   - /ticket archived
+   - /ticket reopen ticket:123
    - /ticket add
    - /ticket remove
    - /ticket rename
@@ -53,10 +59,30 @@ Ein leistungsstarkes, modernes Ticket-System fuer Support-Server mit einfacher K
 - config/settings.json: Globale Einstellungen
 - config/ticket-types.json: Ticket-Kategorien und Typen
 
+### Neue Settings
+
+- inactivityReminderHours: Sendet nach X Stunden Inaktivitaet eine Erinnerung ins Ticket.
+- inactivityAutoCloseHours: Schliesst Tickets nach X Stunden Inaktivitaet automatisch.
+- reopenWindowHours: Zeitraum, in dem der Ersteller ein geschlossenes Ticket wieder oeffnen darf.
+- inactivityMonitorIntervalMinutes: Intervall fuer die Inaktivitaetspruefung.
+
+Diese Werte koennen auch direkt ueber `/ticket config` gesetzt werden.
+
+- key:`inactivityReminderHours` number:`24`
+- key:`inactivityAutoCloseHours` number:`168`
+- key:`reopenWindowHours` number:`24`
+
+### Ticket-Typ Felder
+
+- defaultPriority: Standard-Prioritaet fuer neu erstellte Tickets dieses Typs.
+- pingRoleIds: Rollen, die beim Erstellen oder Wiedereroeffnen erwaehnt werden.
+- formFields: Zusaetzliche Formularfelder fuer das Ticket-Modal, z. B. Account, Beweise oder User-ID.
+
 ## Hinweise
 
 - Bei AUTO_DEPLOY_COMMANDS=true werden Slash-Commands beim Start aktualisiert.
 - Daten werden automatisch in data/store.json gespeichert.
+- Wenn die Commands trotz erfolgreichem Deploy nicht sichtbar sind, den Bot ueber `npm run invite` mit `applications.commands` neu autorisieren und den Discord-Client einmal neu laden.
 
 ## Deployment auf Railway
 

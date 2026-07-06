@@ -4,6 +4,7 @@ const { Client, GatewayIntentBits } = require("discord.js");
 const logger = require("./logger");
 const { registerCommands } = require("./registerCommands");
 const { createTicketRuntime } = require("./ticketRuntime");
+const { startDashboard } = require("./dashboard");
 
 function validateEnvironment() {
   if (!process.env.DISCORD_TOKEN) {
@@ -57,6 +58,12 @@ async function bootstrap() {
   client.once("clientReady", async () => {
     logger.info(`Bot online als ${client.user.tag}`);
 
+    runtime.startInactivityMonitor();
+
+    if (String(process.env.DASHBOARD_ENABLED).toLowerCase() === "true") {
+      startDashboard();
+    }
+
     if (String(process.env.AUTO_DEPLOY_COMMANDS).toLowerCase() === "true") {
       try {
         const deployResult = await registerCommands({
@@ -83,6 +90,14 @@ async function bootstrap() {
           ephemeral: true
         });
       }
+    }
+  });
+
+  client.on("messageCreate", async (message) => {
+    try {
+      await runtime.handleMessage(message);
+    } catch (error) {
+      logger.error("Fehler in messageCreate", { error: error.message });
     }
   });
 

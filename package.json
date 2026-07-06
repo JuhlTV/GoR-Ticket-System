@@ -10,7 +10,8 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "deploy": "node src/deployCommands.js"
+    "deploy": "node src/deployCommands.js",
+    "invite": "node src/printInviteUrl.js"
   },
   "keywords": [
     "discord",
@@ -22,6 +23,7 @@
   "dependencies": {
     "discord.js": "^14.21.0",
     "dotenv": "^16.6.1",
+    "express": "^4.21.2",
     "fs-extra": "^11.3.2"
   },
   "devDependencies": {

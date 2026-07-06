@@ -35,6 +35,7 @@ class JsonStore {
       this.state.guilds[guildId] = {
         settingsOverrides: {},
         tickets: {},
+        closedTickets: {},
         userTickets: {},
         counters: {
           opened: 0,
@@ -42,6 +43,10 @@ class JsonStore {
           lastTicketNumber: 0
         }
       };
+    }
+
+    if (!this.state.guilds[guildId].closedTickets) {
+      this.state.guilds[guildId].closedTickets = {};
     }
 
     return this.state.guilds[guildId];
@@ -88,6 +93,88 @@ class JsonStore {
     return guild.tickets[channelId] || null;
   }
 
+  getClosedTicket(guildId, ticketId) {
+    const guild = this.ensureGuild(guildId);
+    return guild.closedTickets[String(ticketId)] || null;
+  }
+
+  isBlacklisted(guildId, userId) {
+    const guild = this.ensureGuild(guildId);
+    return (guild.settingsOverrides.blacklist || []).includes(userId);
+  }
+
+  async addToBlacklist(guildId, userId) {
+    const guild = this.ensureGuild(guildId);
+    if (!Array.isArray(guild.settingsOverrides.blacklist)) {
+      guild.settingsOverrides.blacklist = [];
+    }
+    if (!guild.settingsOverrides.blacklist.includes(userId)) {
+      guild.settingsOverrides.blacklist.push(userId);
+      await this.save();
+    }
+    return guild.settingsOverrides.blacklist;
+  }
+
+  async removeFromBlacklist(guildId, userId) {
+    const guild = this.ensureGuild(guildId);
+    const current = guild.settingsOverrides.blacklist || [];
+    guild.settingsOverrides.blacklist = current.filter((id) => id !== userId);
+    await this.save();
+    return guild.settingsOverrides.blacklist;
+  }
+
+  getBlacklist(guildId) {
+    const guild = this.ensureGuild(guildId);
+    return guild.settingsOverrides.blacklist || [];
+  }
+
+  getSupporterStats(guildId) {
+    const guild = this.ensureGuild(guildId);
+    const closed = Object.values(guild.closedTickets);
+    const stats = {};
+
+    for (const ticket of closed) {
+      if (!ticket.claimedBy) continue;
+      if (!stats[ticket.claimedBy]) {
+        stats[ticket.claimedBy] = { userId: ticket.claimedBy, closed: 0, totalResponseTime: 0, responseCount: 0 };
+      }
+      stats[ticket.claimedBy].closed++;
+      if (ticket.firstSupportResponseAt && ticket.createdAt) {
+        const responseTime = ticket.firstSupportResponseAt - ticket.createdAt;
+        if (responseTime > 0) {
+          stats[ticket.claimedBy].totalResponseTime += responseTime;
+          stats[ticket.claimedBy].responseCount++;
+        }
+      }
+    }
+
+    return Object.values(stats)
+      .map((s) => ({
+        userId: s.userId,
+        closed: s.closed,
+        avgResponseTimeMs: s.responseCount > 0 ? Math.round(s.totalResponseTime / s.responseCount) : null
+      }))
+      .sort((a, b) => b.closed - a.closed);
+  }
+
+  listClosedTickets(guildId, options = {}) {
+    const guild = this.ensureGuild(guildId);
+    let tickets = Object.values(guild.closedTickets);
+
+    if (options.creatorId) {
+      tickets = tickets.filter((ticket) => ticket.creatorId === options.creatorId);
+    }
+
+    if (options.typeId) {
+      tickets = tickets.filter((ticket) => ticket.typeId === options.typeId);
+    }
+
+    tickets.sort((left, right) => Number(right.closedAt || 0) - Number(left.closedAt || 0));
+
+    const limit = Math.max(1, Number(options.limit || tickets.length || 10));
+    return tickets.slice(0, limit);
+  }
+
   getAllOpenTickets(guildId) {
     const guild = this.ensureGuild(guildId);
     return Object.values(guild.tickets);
@@ -99,7 +186,7 @@ class JsonStore {
 
     for (const channelId of channels) {
       const ticket = guild.tickets[channelId];
-      if (ticket && ticket.status === "open" && ticket.typeId === typeId) {
+      if (ticket && ticket.status !== "closed" && ticket.typeId === typeId) {
         return ticket;
       }
     }
@@ -117,7 +204,9 @@ class JsonStore {
     const ticket = {
       ticketId,
       status: "open",
+      statusUpdatedAt: Date.now(),
       claimedBy: null,
+      claimedAt: null,
       participants: [],
       priority: "normal",
       createdAt: Date.now(),
@@ -160,6 +249,15 @@ class JsonStore {
 
     guild.counters.closed += 1;
 
+    const closedTicket = {
+      ...ticket,
+      status: "closed",
+      closedAt: ticket.closedAt || Date.now(),
+      updatedAt: Date.now()
+    };
+
+    guild.closedTickets[String(closedTicket.ticketId)] = closedTicket;
+
     if (guild.userTickets[ticket.creatorId]) {
       guild.userTickets[ticket.creatorId] = guild.userTickets[ticket.creatorId].filter((id) => id !== channelId);
       if (guild.userTickets[ticket.creatorId].length === 0) {
@@ -169,16 +267,66 @@ class JsonStore {
 
     delete guild.tickets[channelId];
     await this.save();
-    return ticket;
+    return closedTicket;
+  }
+
+  async reopenTicket(guildId, ticketId, patch) {
+    const guild = this.ensureGuild(guildId);
+    const closedTicket = guild.closedTickets[String(ticketId)];
+    if (!closedTicket) return null;
+
+    const reopenedTicket = {
+      ...closedTicket,
+      ...patch,
+      status: "open",
+      statusUpdatedAt: Date.now(),
+      reopenedAt: Date.now(),
+      reopenedFromClosedAt: closedTicket.closedAt || null,
+      closeReason: null,
+      closedAt: null,
+      updatedAt: Date.now()
+    };
+
+    guild.tickets[reopenedTicket.channelId] = reopenedTicket;
+
+    if (!guild.userTickets[reopenedTicket.creatorId]) {
+      guild.userTickets[reopenedTicket.creatorId] = [];
+    }
+
+    if (!guild.userTickets[reopenedTicket.creatorId].includes(reopenedTicket.channelId)) {
+      guild.userTickets[reopenedTicket.creatorId].push(reopenedTicket.channelId);
+    }
+
+    delete guild.closedTickets[String(ticketId)];
+    await this.save();
+    return reopenedTicket;
   }
 
   getStats(guildId) {
     const guild = this.ensureGuild(guildId);
+    const openTickets = Object.values(guild.tickets);
+    const byStatus = {
+      open: 0,
+      claimed: 0,
+      "waiting-for-user": 0,
+      "waiting-for-support": 0,
+      closing: 0,
+      closed: Object.keys(guild.closedTickets).length
+    };
+
+    for (const ticket of openTickets) {
+      if (Object.prototype.hasOwnProperty.call(byStatus, ticket.status)) {
+        byStatus[ticket.status] += 1;
+      }
+    }
+
     return {
       opened: guild.counters.opened,
       closed: guild.counters.closed,
-      openNow: Object.keys(guild.tickets).length,
-      lastTicketNumber: guild.counters.lastTicketNumber
+      openNow: openTickets.length,
+      claimedNow: openTickets.filter((ticket) => ticket.claimedBy).length,
+      lastTicketNumber: guild.counters.lastTicketNumber,
+      byStatus
     };
   }
 }

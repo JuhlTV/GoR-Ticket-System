@@ -5,14 +5,19 @@
     "description": "Fragen, Hilfe und Problemloesung",
     "emoji": "🛠️",
     "categoryName": "SUPPORT TICKETS",
-    "supportRoleIds": []
-  },
-  {
-    "id": "billing",
-    "label": "Billing",
-    "description": "Zahlungen, Rechnungen und Erstattungen",
-    "emoji": "💳",
-    "categoryName": "BILLING TICKETS",
+    "defaultPriority": "normal",
+    "pingRoleIds": [],
+    "openingMessage": "Hallo! Danke fuer dein Ticket. Unser Team meldet sich so schnell wie moeglich bei dir. Bitte beschreibe dein Anliegen so detailliert wie moeglich.",
+    "formFields": [
+      {
+        "id": "account",
+        "label": "Account / Charakter",
+        "placeholder": "Wen oder was betrifft das Problem?",
+        "required": false,
+        "style": "short",
+        "maxLength": 100
+      }
+    ],
     "supportRoleIds": []
   },
   {
@@ -21,6 +26,27 @@
     "description": "Meldung zu Regelverstoessen",
     "emoji": "🚨",
     "categoryName": "REPORT TICKETS",
+    "defaultPriority": "high",
+    "pingRoleIds": [],
+    "formFields": [
+      {
+        "id": "reported-user",
+        "label": "Gemeldeter User",
+        "placeholder": "Name oder ID des Users",
+        "required": true,
+        "style": "short",
+        "maxLength": 100
+      },
+      {
+        "id": "evidence",
+        "label": "Beweise / Kontext",
+        "placeholder": "Was ist passiert? Links, Screenshots, Zeitangaben...",
+        "required": false,
+        "style": "paragraph",
+        "maxLength": 500
+      }
+    ],
+    "openingMessage": "Hallo! Danke fuer deine Meldung. Unser Moderationsteam wird den Fall so schnell wie moeglich pruefen.",
     "supportRoleIds": []
   }
 ]

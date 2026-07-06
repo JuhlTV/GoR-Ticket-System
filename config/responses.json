@@ -1,0 +1,27 @@
+[
+  {
+    "id": "waiting",
+    "label": "Warte auf Antwort",
+    "content": "Vielen Dank fuer deine Anfrage! Wir warten noch auf weitere Informationen von dir, bevor wir weiterhelfen koennen. Bitte antworte so bald wie moeglich."
+  },
+  {
+    "id": "resolved",
+    "label": "Problem geloest",
+    "content": "Wir freuen uns, dass wir dir helfen konnten! Falls du weitere Fragen hast, kannst du jederzeit ein neues Ticket erstellen. Wir schliessen dieses Ticket nun."
+  },
+  {
+    "id": "transfer",
+    "label": "Weiterleitung",
+    "content": "Dein Anliegen wird an die zustaendige Abteilung weitergeleitet. Wir melden uns schnellstmoeglich zurueck – bitte hab etwas Geduld."
+  },
+  {
+    "id": "more-info",
+    "label": "Mehr Informationen benoetigt",
+    "content": "Um dir besser helfen zu koennen, benoetigen wir noch mehr Informationen. Bitte beschreibe dein Anliegen so genau wie moeglich, inklusive relevanter Screenshots oder Fehlermeldungen."
+  },
+  {
+    "id": "close-reminder",
+    "label": "Schliessungs-Erinnerung",
+    "content": "Falls wir dir nicht weiterhelfen konnten oder du keine weiteren Fragen hast, koennen wir dieses Ticket schliessen. Bitte melde dich, andernfalls schliessen wir das Ticket bald automatisch."
+  }
+]

@@ -5,6 +5,19 @@
   "transcriptChannelId": "",
   "allowOneTicketPerType": true,
   "closeDeleteDelaySeconds": 10,
+  "inactivityReminderHours": 24,
+  "inactivityAutoCloseHours": 168,
+  "reopenWindowHours": 24,
+  "inactivityMonitorIntervalMinutes": 5,
   "ticketChannelNameFormat": "ticket-{id}-{user}",
-  "maxMessagesInTranscript": 500
+  "maxMessagesInTranscript": 500,
+  "panelStyle": "dropdown",
+  "panelTitle": "Support Ticket erstellen",
+  "panelDescription": "Waehle den passenden Ticket-Typ aus. Danach oeffnet sich ein Formular fuer dein Anliegen.",
+  "panelColor": 2066252,
+  "panelFooter": "Bitte ein Ticket pro Thema erstellen.",
+  "panelImageUrl": "",
+  "panelThumbnailUrl": "",
+  "useThreads": false,
+  "threadChannelId": ""
 }
